@@ -8,7 +8,7 @@
     [lightTileColor]="lightTileColor" 
     [darkTileColor]="darkTileColor">
   </ngx-chess-board>
-  <div class="overlay" *ngIf="(isWhiteTurn && !isWhiteBoard) || (!isWhiteTurn && isWhiteBoard)">
+  <div class="overlay" *ngIf="!isOnlineMode && ((isWhiteTurn && !isWhiteBoard) || (!isWhiteTurn && isWhiteBoard))">
     <p>Waiting for opponent's turn...</p>
   </div>
 </div>

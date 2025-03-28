@@ -6,16 +6,23 @@
   <div class="boards-container">
     <iframe *ngIf="!isOnlineMode" #white_board_iframe [src]="iFrameWhiteBoardUrl" class="responsive-iframe"></iframe>
     <iframe *ngIf="!isOnlineMode" #black_board_iframe [src]="iFrameBlackBoardUrl" class="responsive-iframe"></iframe>
-    <iframe *ngIf="isOnlineMode" #online_board_iframe [src]="iFrameWhiteBoardUrl" class="responsive-iframe"></iframe>
+    <iframe *ngIf="isOnlineMode" #online_board_iframe [src]="iFrameBoardUrl" class="responsive-iframe"></iframe>
   </div>
 
   <div class="actions-bar">
     <button *ngIf="!isOnlineMode" class="new-game-button" (click)="reset()">Reset</button>
     <button *ngIf="!isOnlineMode" class="online-mode-button" (click)="onModeChange()">Online Mode</button>
     <button *ngIf="isOnlineMode" class="offline-mode-button" (click)="onModeChange()">Offline Mode</button>
-    <button *ngIf="isOnlineMode" class="new-game-button" (click)="onModeChange()">Create game</button>
-    <button *ngIf="isOnlineMode" class="join-game-button" (click)="onModeChange()">Join game</button>
+    <button *ngIf="isOnlineMode && gameCode == ''" class="new-game-button" (click)="createGame()">Create game</button>
+    <button *ngIf="isOnlineMode && gameCode == ''" class="join-game-button" (click)="onJoinClick()">Join game</button>
   </div>
+
+  <app-game-code
+    *ngIf="isOnlineMode"
+    [gameCode]="gameCode"
+    [isHost]="isHost"
+    (joinGame)="joinGame($event)">
+  </app-game-code>
 
   <div *ngIf="gameFinished" class="endgame-popup">
     <div class="popup-content">

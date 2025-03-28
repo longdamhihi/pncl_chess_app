@@ -1,0 +1,12 @@
+<div class="game-code-container">
+  <div *ngIf="isHost && gameCode" class="game-code-display">
+    <p>Share this game code with a friend:</p>
+    <strong>{{ gameCode }}</strong>
+  </div>
+
+  <div *ngIf="!isHost" class="game-code-input">
+    <p>Enter a game code to join:</p>
+    <input type="text" [(ngModel)]="enteredGameCode" placeholder="Enter game code" />
+    <button (click)="onJoinGame()">Join Game</button>
+  </div>
+</div>

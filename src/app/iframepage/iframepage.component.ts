@@ -12,6 +12,7 @@ import { SafeResourceUrl } from '@angular/platform-browser';
 export class IframepageComponent {
   isWhiteTurn: boolean = true;
   isWhiteBoard: boolean = false;
+  isOnlineMode: boolean = false;
   lightTileColor: string = '#EEEED2';
   darkTileColor: string = '#769656';
   boardSize: number = 525; // Default size
@@ -30,6 +31,7 @@ export class IframepageComponent {
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       this.isWhiteBoard = params['isWhite'] ?? false;
+      this.isOnlineMode = params['isOnlineMode'] ?? false;
     });
 
     window.addEventListener('message', (event) => {

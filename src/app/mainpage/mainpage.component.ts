@@ -1,6 +1,8 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { AngularFireDatabase } from '@angular/fire/compat/database';
+import { v4 as uuidv4 } from 'uuid';
 
 @Component({
   selector: 'app-mainpage',
@@ -12,19 +14,28 @@ export class MainpageComponent {
   whiteBoardIframe!: ElementRef<HTMLIFrameElement>;
   @ViewChild('black_board_iframe')
   blackBoardIframe!: ElementRef<HTMLIFrameElement>;
+  @ViewChild('board_iframe') boardIframe!: ElementRef<HTMLIFrameElement>;
 
   gameFinished = false;
   iFrameWhiteBoardUrl: SafeResourceUrl = '';
   iFrameBlackBoardUrl: SafeResourceUrl = '';
+  iFrameBoardUrl: SafeResourceUrl = '';
 
-  isOnlineMode = false;
-  winner = '';
+  isOnlineMode: boolean = false;
+  winner: string = '';
+  gameCode: string = '';
+  isHost: boolean = true;
 
-  constructor(private router: Router, private sanitizer: DomSanitizer) {}
+  constructor(
+    private router: Router,
+    private sanitizer: DomSanitizer,
+    private db: AngularFireDatabase
+  ) {}
 
   ngOnInit() {
     this.iFrameWhiteBoardUrl = this.getIframePageUrl(true);
     this.iFrameBlackBoardUrl = this.getIframePageUrl();
+    this.iFrameBoardUrl = this.getIframePageUrl();
   }
 
   ngAfterViewInit() {
@@ -32,28 +43,57 @@ export class MainpageComponent {
       if (event.data.mate) {
         this.gameFinished = true;
         this.winner = event.data.isWhiteTurn ? 'White' : 'Black';
+        if (this.isOnlineMode) {
+          this.updateGameState({ mate: true, winner: this.winner });
+        }
       }
 
-      const lastTurnColor = event.data.color;
+      if (this.isOnlineMode && event.data.turn) {
+        this.updateGameState(event.data);
+      } else {
+        const lastTurnColor = event.data.color;
+        const targetIframe =
+          lastTurnColor === 'white'
+            ? this.blackBoardIframe
+            : this.whiteBoardIframe;
 
-      const targetIframe =
-        lastTurnColor === 'white'
-          ? this.blackBoardIframe
-          : this.whiteBoardIframe;
-
-      const targetWindow = targetIframe.nativeElement.contentWindow;
-      if (targetWindow) {
-        targetWindow.postMessage(event.data, this.getIframePageUrl());
+        const targetWindow = targetIframe.nativeElement.contentWindow;
+        if (targetWindow) {
+          targetWindow.postMessage(event.data, this.getIframePageUrl());
+        }
       }
     });
+
+    if (this.isOnlineMode) {
+      this.listenToGameUpdates();
+    }
   }
 
   onModeChange() {
     this.isOnlineMode = !this.isOnlineMode;
+    this.iFrameBoardUrl = this.getIframePageUrl();
   }
 
-  onGameEnd() {
-    this.gameFinished = true;
+  createGame() {
+    this.isOnlineMode = true;
+    this.isHost = true;
+    this.gameCode = uuidv4().slice(0, 6);
+    this.db.object(`games/${this.gameCode}`).set({
+      boardState: null,
+      currentTurn: 'white',
+      mate: false,
+      winner: '',
+    });
+  }
+
+  onJoinClick() {
+    this.isHost = false;
+  }
+
+  joinGame(code: string) {
+    this.isOnlineMode = true;
+    this.gameCode = code;
+    this.listenToGameUpdates();
   }
 
   reset() {
@@ -61,27 +101,70 @@ export class MainpageComponent {
 
     const resetData = { reset: true };
 
-    this.whiteBoardIframe.nativeElement.contentWindow?.postMessage(
-      resetData,
-      this.iFrameWhiteBoardUrl
-    );
+    if (this.isOnlineMode) {
+      this.db.object(`games/${this.gameCode}`).update({
+        boardState: null,
+        currentTurn: 'white',
+        mate: false,
+        winner: '',
+      });
+    } else {
+      this.whiteBoardIframe.nativeElement.contentWindow?.postMessage(
+        resetData,
+        this.iFrameWhiteBoardUrl
+      );
 
-    this.blackBoardIframe.nativeElement.contentWindow?.postMessage(
-      resetData,
-      this.iFrameBlackBoardUrl
-    );
+      this.blackBoardIframe.nativeElement.contentWindow?.postMessage(
+        resetData,
+        this.iFrameBlackBoardUrl
+      );
+    }
 
     localStorage.clear();
   }
 
   getIframePageUrl(isWhite: boolean = false): SafeResourceUrl {
-    const blackBoardUrl = `${window.location.origin}/iframepage`;
+    const params = new URLSearchParams();
 
-    if (isWhite) {
-      const whiteBoardUrl = `${blackBoardUrl}/?isWhite=true`;
-      return this.sanitizer.bypassSecurityTrustResourceUrl(whiteBoardUrl);
-    } else {
-      return this.sanitizer.bypassSecurityTrustResourceUrl(blackBoardUrl);
+    if (this.isOnlineMode) {
+      params.set('isOnlineMode', 'true');
+      if (this.isHost) {
+        params.set('isWhite', 'true');
+      }
+    } else if (isWhite) {
+      params.set('isWhite', 'true');
+    }
+
+    const boardUrl = `${
+      window.location.origin
+    }/iframepage?${params.toString()}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(boardUrl);
+  }
+
+  private updateGameState(data: any) {
+    if (this.gameCode) {
+      this.db.object(`games/${this.gameCode}`).update(data);
+    }
+  }
+
+  private listenToGameUpdates() {
+    if (this.gameCode) {
+      this.db
+        .object(`games/${this.gameCode}`)
+        .valueChanges()
+        .subscribe((gameState: any) => {
+          if (gameState) {
+            if (gameState.mate) {
+              this.gameFinished = true;
+              this.winner = gameState.winner;
+            } else if (gameState.boardState) {
+              this.boardIframe.nativeElement.contentWindow?.postMessage(
+                gameState,
+                this.iFrameBoardUrl
+              );
+            }
+          }
+        });
     }
   }
 }

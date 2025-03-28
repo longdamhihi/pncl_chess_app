@@ -1,0 +1,13 @@
+<div class="board-container">
+  <ngx-chess-board 
+    #board [size]="boardSize" 
+    [darkDisabled]="isWhiteBoard" 
+    [lightDisabled]="!isWhiteBoard" 
+    (moveChange)="moveChange()"
+    [lightTileColor]="lightTileColor" 
+    [darkTileColor]="darkTileColor">
+  </ngx-chess-board>
+  <div class="overlay" *ngIf="(isWhiteTurn && !isWhiteBoard) || (!isWhiteTurn && isWhiteBoard)">
+    <p>Waiting for opponent's turn...</p>
+  </div>
+</div>

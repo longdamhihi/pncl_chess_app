@@ -1,0 +1,23 @@
+<div class="game-wrapper">
+  <header class="game-header">
+    <h1>Chess Game</h1>
+  </header>
+  
+  <div class="boards-container">
+    <iframe #white_board_iframe [src]="iFrameWhiteBoardUrl" class="responsive-iframe"></iframe>
+    <iframe #black_board_iframe [src]="iFrameBlackBoardUrl" class="responsive-iframe"></iframe>
+  </div>
+
+  <div class="actions-bar">
+    <button class="new-game-button" (click)="reset()">Reset</button>
+    <button class="online-mode-button" (click)="onOnlineModeClick()">Online Mode</button>
+  </div>
+
+  <div *ngIf="gameFinished" class="endgame-popup">
+    <div class="popup-content">
+      <h2>Game Over</h2>
+      <p class="winner-message">{{ winner }} Wins!</p>
+      <button class="new-game-button" (click)="reset()">New Game</button>
+    </div>
+  </div>
+</div>

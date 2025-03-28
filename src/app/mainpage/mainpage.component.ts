@@ -14,7 +14,8 @@ export class MainpageComponent {
   whiteBoardIframe!: ElementRef<HTMLIFrameElement>;
   @ViewChild('black_board_iframe')
   blackBoardIframe!: ElementRef<HTMLIFrameElement>;
-  @ViewChild('board_iframe') boardIframe!: ElementRef<HTMLIFrameElement>;
+  @ViewChild('board_iframe')
+  boardIframe!: ElementRef<HTMLIFrameElement>;
 
   gameFinished = false;
   iFrameWhiteBoardUrl: SafeResourceUrl = '';
@@ -43,14 +44,8 @@ export class MainpageComponent {
       if (event.data.mate) {
         this.gameFinished = true;
         this.winner = event.data.isWhiteTurn ? 'White' : 'Black';
-        if (this.isOnlineMode) {
-          this.updateGameState({ mate: true, winner: this.winner });
-        }
       }
-
-      if (this.isOnlineMode && event.data.turn) {
-        this.updateGameState(event.data);
-      } else {
+      if (!this.isOnlineMode) {
         const lastTurnColor = event.data.color;
         const targetIframe =
           lastTurnColor === 'white'
@@ -61,29 +56,24 @@ export class MainpageComponent {
         if (targetWindow) {
           targetWindow.postMessage(event.data, this.getIframePageUrl());
         }
+      } else {
+        this.listenToGameUpdates();
+        this.moveChange(event.data);
       }
     });
-
-    if (this.isOnlineMode) {
-      this.listenToGameUpdates();
-    }
   }
 
   onModeChange() {
     this.isOnlineMode = !this.isOnlineMode;
-    this.iFrameBoardUrl = this.getIframePageUrl();
+    this.ngOnInit();
+    this.reset();
   }
 
   createGame() {
     this.isOnlineMode = true;
     this.isHost = true;
     this.gameCode = uuidv4().slice(0, 6);
-    this.db.object(`games/${this.gameCode}`).set({
-      boardState: null,
-      currentTurn: 'white',
-      mate: false,
-      winner: '',
-    });
+    this.db.object(`games/${this.gameCode}`).set(null);
   }
 
   onJoinClick() {
@@ -93,33 +83,26 @@ export class MainpageComponent {
   joinGame(code: string) {
     this.isOnlineMode = true;
     this.gameCode = code;
+    this.iFrameBoardUrl = this.getIframePageUrl();
     this.listenToGameUpdates();
+  }
+
+  moveChange(data: any) {
+    this.db.object(`games/${this.gameCode}`).update(data);
   }
 
   reset() {
     this.gameFinished = false;
-
     const resetData = { reset: true };
+    this.whiteBoardIframe.nativeElement.contentWindow?.postMessage(
+      resetData,
+      this.iFrameWhiteBoardUrl
+    );
 
-    if (this.isOnlineMode) {
-      this.db.object(`games/${this.gameCode}`).update({
-        boardState: null,
-        currentTurn: 'white',
-        mate: false,
-        winner: '',
-      });
-    } else {
-      this.whiteBoardIframe.nativeElement.contentWindow?.postMessage(
-        resetData,
-        this.iFrameWhiteBoardUrl
-      );
-
-      this.blackBoardIframe.nativeElement.contentWindow?.postMessage(
-        resetData,
-        this.iFrameBlackBoardUrl
-      );
-    }
-
+    this.blackBoardIframe.nativeElement.contentWindow?.postMessage(
+      resetData,
+      this.iFrameBlackBoardUrl
+    );
     localStorage.clear();
   }
 
@@ -141,27 +124,21 @@ export class MainpageComponent {
     return this.sanitizer.bypassSecurityTrustResourceUrl(boardUrl);
   }
 
-  private updateGameState(data: any) {
-    if (this.gameCode) {
-      this.db.object(`games/${this.gameCode}`).update(data);
-    }
-  }
-
   private listenToGameUpdates() {
     if (this.gameCode) {
       this.db
         .object(`games/${this.gameCode}`)
         .valueChanges()
-        .subscribe((gameState: any) => {
-          if (gameState) {
-            if (gameState.mate) {
+        .subscribe((data: any) => {
+          if (data) {
+            if (data.mate) {
               this.gameFinished = true;
-              this.winner = gameState.winner;
-            } else if (gameState.boardState) {
-              this.boardIframe.nativeElement.contentWindow?.postMessage(
-                gameState,
-                this.iFrameBoardUrl
-              );
+              this.winner = data.color === 'white' ? 'White' : 'Black';
+            }
+            const targetIframe = this.boardIframe;
+            const targetWindow = targetIframe.nativeElement.contentWindow;
+            if (targetWindow) {
+              targetWindow.postMessage(data, this.getIframePageUrl());
             }
           }
         });

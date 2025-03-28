@@ -6,7 +6,7 @@
   <div class="boards-container">
     <iframe *ngIf="!isOnlineMode" #white_board_iframe [src]="iFrameWhiteBoardUrl" class="responsive-iframe"></iframe>
     <iframe *ngIf="!isOnlineMode" #black_board_iframe [src]="iFrameBlackBoardUrl" class="responsive-iframe"></iframe>
-    <iframe *ngIf="isOnlineMode" #online_board_iframe [src]="iFrameBoardUrl" class="responsive-iframe"></iframe>
+    <iframe *ngIf="isOnlineMode" #board_iframe [src]="iFrameBoardUrl" class="responsive-iframe"></iframe>
   </div>
 
   <div class="actions-bar">

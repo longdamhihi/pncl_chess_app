@@ -2,15 +2,19 @@
   <header class="game-header">
     <h1>Chess Game</h1>
   </header>
-  
+
   <div class="boards-container">
-    <iframe #white_board_iframe [src]="iFrameWhiteBoardUrl" class="responsive-iframe"></iframe>
-    <iframe #black_board_iframe [src]="iFrameBlackBoardUrl" class="responsive-iframe"></iframe>
+    <iframe *ngIf="!isOnlineMode" #white_board_iframe [src]="iFrameWhiteBoardUrl" class="responsive-iframe"></iframe>
+    <iframe *ngIf="!isOnlineMode" #black_board_iframe [src]="iFrameBlackBoardUrl" class="responsive-iframe"></iframe>
+    <iframe *ngIf="isOnlineMode" #online_board_iframe [src]="iFrameWhiteBoardUrl" class="responsive-iframe"></iframe>
   </div>
 
   <div class="actions-bar">
-    <button class="new-game-button" (click)="reset()">Reset</button>
-    <button class="online-mode-button" (click)="onOnlineModeClick()">Online Mode</button>
+    <button *ngIf="!isOnlineMode" class="new-game-button" (click)="reset()">Reset</button>
+    <button *ngIf="!isOnlineMode" class="online-mode-button" (click)="onModeChange()">Online Mode</button>
+    <button *ngIf="isOnlineMode" class="offline-mode-button" (click)="onModeChange()">Offline Mode</button>
+    <button *ngIf="isOnlineMode" class="new-game-button" (click)="onModeChange()">Create game</button>
+    <button *ngIf="isOnlineMode" class="join-game-button" (click)="onModeChange()">Join game</button>
   </div>
 
   <div *ngIf="gameFinished" class="endgame-popup">

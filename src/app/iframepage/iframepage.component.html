@@ -1,6 +1,7 @@
 <div class="board-container">
   <ngx-chess-board 
-    #board [size]="boardSize" 
+    #board 
+    [size]="boardSize" 
     [darkDisabled]="isWhiteBoard" 
     [lightDisabled]="!isWhiteBoard" 
     (moveChange)="moveChange()"

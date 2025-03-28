@@ -16,6 +16,8 @@ export class MainpageComponent {
   gameFinished = false;
   iFrameWhiteBoardUrl: SafeResourceUrl = '';
   iFrameBlackBoardUrl: SafeResourceUrl = '';
+
+  isOnlineMode = false;
   winner = '';
 
   constructor(private router: Router, private sanitizer: DomSanitizer) {}
@@ -46,8 +48,8 @@ export class MainpageComponent {
     });
   }
 
-  onOnlineModeClick() {
-    console.log('online');
+  onModeChange() {
+    this.isOnlineMode = !this.isOnlineMode;
   }
 
   onGameEnd() {
